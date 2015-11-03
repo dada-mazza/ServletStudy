@@ -160,6 +160,9 @@ public class HelloServlet extends HttpServlet {
 
     private String responseMath(List<String> url) {
         try {
+            if (url.size() < 3) {
+                return "Enter Number";
+            }
             BigDecimal big = new BigDecimal(url.get(2));
             big = big.multiply(big);
             return big.toString();
@@ -249,6 +252,7 @@ public class HelloServlet extends HttpServlet {
                 .append("/")
                 .append(fileName)
                 .toString());
+
         int bufferSize = 64 * 1024;
         ServletOutputStream out = response.getOutputStream();
         BufferedInputStream in = new BufferedInputStream(new FileInputStream(file), bufferSize);
