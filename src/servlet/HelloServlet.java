@@ -1,12 +1,17 @@
 package servlet;
 
 import javax.servlet.ServletException;
+import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.*;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class HelloServlet extends HttpServlet {
 
@@ -16,60 +21,59 @@ public class HelloServlet extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         response.setContentType("text/html");
         response.setStatus(HttpServletResponse.SC_OK);
-        PrintWriter writer = response.getWriter();
-        System.out.println(request.getRequestURI());
-        parseRequestGET(writer, request.getRequestURI());
+        System.out.println(getRequestURIwithDate(request));
+        parseRequest(response, request);
     }
 
     @Override
     protected void doDelete(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         System.out.print("doDelete ");
-        System.out.println(request.getRequestURI());
+        System.out.println(getRequestURIwithDate(request));
         super.doDelete(request, response);
     }
 
     @Override
     protected void doHead(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         System.out.print("doHead ");
-        System.out.println(request.getRequestURI());
+        System.out.println(getRequestURIwithDate(request));
         super.doHead(request, response);
     }
 
     @Override
     protected void doOptions(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         System.out.print("doOption ");
-        System.out.println(request.getRequestURI());
+        System.out.println(getRequestURIwithDate(request));
         super.doOptions(request, response);
     }
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         System.out.print("doPost ");
-        System.out.println(request.getRequestURI());
+        System.out.println(getRequestURIwithDate(request));
         super.doPost(request, response);
     }
 
     @Override
     protected void doPut(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         System.out.print("doPut ");
-        System.out.println(request.getRequestURI());
+        System.out.println(getRequestURIwithDate(request));
         super.doPut(request, response);
     }
 
     @Override
     protected void doTrace(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         System.out.print("doTrace ");
-        System.out.println(request.getRequestURI());
+        System.out.println(getRequestURIwithDate(request));
         super.doTrace(request, response);
     }
 
-    private String createPage() {
+    private String startPage() {
 
         StringBuilder sb = new StringBuilder();
         sb.append("<center>");
         sb.append("<br>");
         sb.append("<img style=\"-webkit-user-select: none; display: block; margin:auto;\"");
-        sb.append("src=\"http://www.infopulse.com/wp-content/themes/infopulse/img/infopulse-logo.png\">");
+        sb.append("src=\"infopulse-logo.png\">");
         sb.append("<H1>").append(setFormatTime().format(new Date())).append("</H1>");
         sb.append("<H2>").append(new Random().nextLong()).append("</H2>");
         sb.append("</center>");
@@ -79,8 +83,59 @@ public class HelloServlet extends HttpServlet {
     private String page404() {
         StringBuilder sb = new StringBuilder();
         sb.append("<img style=\"-webkit-user-select: none; display: block; margin:auto;\"");
-        sb.append("src=\"http://0.s3.envato.com/files/161763/Screenshots/01_white_color_scheme.__large_preview.jpg\">");
+        sb.append("src=\"img/404.png\">");
         return sb.toString();
+    }
+
+    private void parseRequest(HttpServletResponse response, HttpServletRequest request) throws IOException {
+
+        List<String> url = new ArrayList<>(Arrays.asList(request.getRequestURI().split("/")));
+
+        if (request.getRequestURI().contains("favicon.ico")) {
+            response.setContentType("image/png");
+            writeFile(response, "img/", "favicon.png");
+            return;
+        }
+
+        if (isStyle(request.getRequestURI())) {
+            writeFile(response, "css/", url.get(url.size() - 1));
+            return;
+        }
+
+        if (isScript(request.getRequestURI())) {
+            writeFile(response, "js/", url.get(url.size() - 1));
+            return;
+        }
+
+        if (isImage(request.getRequestURI())) {
+            writeFile(response, "img/", url.get(url.size() - 1));
+            return;
+        }
+
+        PrintWriter writer = response.getWriter();
+        writer.println(includeCSS("css/style.css"));
+        writer.println(includeJS("js/background.js"));
+        writer.println(startPage());
+
+        if (url.size() == 0) {
+            return;
+        }
+
+        writer.println("<H3>");
+        switch (url.get(1)) {
+            case ("math"):
+                writer.println(responseMath(url));
+                break;
+            case ("file"):
+                writer.println(responseFile(url));
+                break;
+            case ("name"):
+                writer.println(responseName(url));
+                break;
+            default:
+                writer.println(page404());
+        }
+        writer.println("</H3>");
     }
 
     private String includeCSS(String cssFile) {
@@ -103,86 +158,46 @@ public class HelloServlet extends HttpServlet {
         return sb.toString();
     }
 
-    private void parseRequestGET(PrintWriter writer, String request) throws IOException {
-
-        ArrayList<String> url = (new ArrayList<String>(Arrays.asList(request.split("/"))));
-
-        if (request.contains(".js") || request.contains(".css")) {
-            StringBuilder sb = new StringBuilder();
-            sb.append(url.get(url.size() - 2));
-            sb.append("/");
-            sb.append(url.get(url.size() - 1));
-            writer.print(readFileToString(sb.toString()));
-            return;
-        }
-
-        writer.println(includeCSS("css/style.css"));
-        writer.println(includeJS("js/background.js"));
-        writer.println(createPage());
-
-        if (url.size() == 0) {
-            return;
-        }
-
-        writer.println("<H3>");
-        switch (url.get(1)) {
-            case ("math"):
-                writer.println(responseMath(url));
-                break;
-            case ("file"):
-                writer.println(responseFile(url));
-                break;
-            case ("name"):
-                writer.println(responseName(url));
-                break;
-        }
-        writer.println("</H3>");
-    }
-
-    private String responseMath(ArrayList<String> url) {
+    private String responseMath(List<String> url) {
         try {
-            return String.valueOf(Math.pow(Long.parseLong(url.get(2)), 2));
+            BigDecimal big = new BigDecimal(url.get(2));
+            big = big.multiply(big);
+            return big.toString();
         } catch (Exception e) {
             return printException(e);
         }
     }
 
-    private String responseFile(ArrayList<String> url) {
-        BufferedReader in = null;
+    private String responseFile(List<String> url) {
+
+        BufferedReader in;
+        StringBuilder fileName = new StringBuilder();
         try {
-            if (url.get(url.size() - 1).contains(".txt")) {
-                StringBuilder fileName = new StringBuilder("file");
-                for (int i = 2; i < url.size(); i++) {
+            if (isText(url.get(url.size() - 1))) {
+                fileName.append("resources");
+                for (int i = 1; i < url.size(); i++) {
                     fileName.append("/").append(url.get(i));
                 }
-                File file = new File(fileName.toString());
-                in = new BufferedReader(new FileReader(file));
-                StringBuilder sb = new StringBuilder();
-                String s = "";
-                while (s != null) {
-                    sb.append(s);
-                    sb.append("\n");
-                    s = in.readLine();
-                }
-                in.close();
-                return sb.toString();
             } else {
-                throw new Exception("incorrect file request");
+                throw new Exception("incorrect file type");
             }
+            File file = new File(fileName.toString());
+            in = new BufferedReader(new FileReader(file));
+            StringBuilder sb = new StringBuilder();
+            String s = "";
+            while (s != null) {
+                sb.append(s);
+                sb.append("\n");
+                s = in.readLine();
+            }
+            in.close();
+            return sb.toString();
         } catch (Exception e) {
             return printException(e);
-        } finally {
-            try {
-                if (in != null) {
-                    in.close();
-                }
-            } catch (IOException e) {
-                return printException(e);
-            }
         }
     }
 
-    private String responseName(ArrayList<String> url) {
+    private String responseName(List<String> url) {
         if (url.size() < 3) {
             return users.toString();
         } else {
@@ -191,35 +206,75 @@ public class HelloServlet extends HttpServlet {
         }
     }
 
+    private String printException(Exception e) {
+        return "<p style=\"color:#ff0000\">" + e + "</p>";
+    }
+
+    public boolean isFileType(String fileType, String request) {
+        Pattern p = Pattern.compile(fileType);
+        Matcher m = p.matcher(request);
+        return m.matches();
+    }
+
+    public boolean isStyle(String request) {
+        Pattern p = Pattern.compile(".+\\.(css)");
+        Matcher m = p.matcher(request);
+        return m.matches();
+    }
+
+    public boolean isScript(String request) {
+        Pattern p = Pattern.compile(".+\\.(js)");
+        Matcher m = p.matcher(request);
+        return m.matches();
+    }
+
+    public boolean isImage(String request) {
+        Pattern p = Pattern.compile(".+\\.(jpg|png)");
+        Matcher m = p.matcher(request);
+        return m.matches();
+    }
+
+    public boolean isText(String request) {
+        Pattern p = Pattern.compile(".+\\.(txt)");
+        Matcher m = p.matcher(request);
+        return m.matches();
+    }
+
+    private void writeFile(HttpServletResponse response, String filePath, String fileName) throws IOException {
+
+        File file = new File(new StringBuilder()
+                .append("resources")
+                .append("/")
+                .append(filePath)
+                .append("/")
+                .append(fileName)
+                .toString());
+        int bufferSize = 64 * 1024;
+        ServletOutputStream out = response.getOutputStream();
+        BufferedInputStream in = new BufferedInputStream(new FileInputStream(file), bufferSize);
+        byte[] buffer = new byte[bufferSize];
+        while (true) {
+            int i = in.read(buffer);
+            if (i < 0) {
+                break;
+            }
+            out.write(buffer, 0, i);
+        }
+        out.flush();
+        out.close();
+    }
+
+    private String getRequestURIwithDate(HttpServletRequest request) {
+        return new StringBuilder()
+                .append(setFormatTime().format(new Date()))
+                .append(" ")
+                .append(request.getRequestURI())
+                .toString();
+    }
+
     private SimpleDateFormat setFormatTime() {
         SimpleDateFormat format = new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss z", Locale.ENGLISH);
         format.setTimeZone(TimeZone.getTimeZone("UTC"));
         return format;
-    }
-
-    private String printException(Exception e) {
-        return "<p style=\"color:#ff0000\">" + e + "</h1>";
-    }
-
-    private String readFileToString(String request) throws IOException {
-        StringBuilder sb = new StringBuilder();
-        BufferedReader reader = null;
-        try {
-            File file = new File("resources/" + request);
-            reader = new BufferedReader(new FileReader(file));
-            String s = "";
-            while (s != null) {
-                s = reader.readLine();
-                sb.append(s);
-                sb.append("\n");
-            }
-        } catch (IOException e) {
-            System.out.println("File not found " + request);
-        } finally {
-            if (reader != null) {
-                reader.close();
-            }
-        }
-        return sb.toString();
     }
 }

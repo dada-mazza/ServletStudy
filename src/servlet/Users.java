@@ -1,17 +1,18 @@
 package servlet;
 
 import java.util.ArrayList;
+import java.util.List;
 
 
 public class Users {
 
-    private ArrayList<String> users = new ArrayList<>();
+    private List<String> users = new ArrayList<>();
 
-    public synchronized ArrayList<String> getUsers() {
+    public synchronized List<String> getUsers() {
         return users;
     }
 
-    public synchronized void setUsers(ArrayList<String> users) {
+    public synchronized void setUsers(List<String> users) {
         this.users = users;
     }
 
