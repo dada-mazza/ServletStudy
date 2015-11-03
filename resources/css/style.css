@@ -3,12 +3,14 @@ h2 {
     height: 50px;
     background-color: yellow;
     box-shadow: 10px 10px 5px #888888;
-
     display: table-cell;
     vertical-align: middle;
     text-align: center
 }
 
 h3 {
+    background-color: lightgreen;
+    box-shadow: 10px 10px 5px #888888;
     text-align: center;
+    font-size: 250%;
 }
